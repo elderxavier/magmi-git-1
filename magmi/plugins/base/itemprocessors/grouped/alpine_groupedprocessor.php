@@ -215,9 +215,7 @@ class Magmi_GroupedItemProcessor extends Magmi_ItemProcessor
      */
     public function fixedLink($pid, $skulist, $gr = true)
     {
-        if(!empty($skulist)) {
-            $this->dolink($pid, "IN (" . $this->arr2values($skulist) . ")", $gr, $skulist);
-        }
+        $this->dolink($pid, "IN (" . $this->arr2values($skulist) . ")", $gr, $skulist);
     }
 
     /**

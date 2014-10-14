@@ -8,13 +8,12 @@ class GrouppriceProcessor extends Magmi_ItemProcessor
     protected $_groups = array();
     protected $_singleStore;
     protected $_priceScope;
-	protected $_tax_class_id;
+
     public function getPluginInfo()
     {
-        return array('name'=>'Group Price Importer','author'=>'Tim Bezhashvyly,dweeves','version'=>'0.0.2');
+        return array('name'=>'Group Price Importer','author'=>'Tim Bezhashvyly','version'=>'0.0.1');
     }
 
-    
     public function processItemAfterId(&$item, $params = null)
     {
         $table_name = $this->tablename("catalog_product_entity_group_price");
@@ -40,16 +39,14 @@ class GrouppriceProcessor extends Magmi_ItemProcessor
                                 AND website_id IN (' . implode(', ', $website_ids) . ')';
                 $this->delete($sql, array($params['product_id']));
             }
-
-            $sql = 'INSERT INTO ' . $table_name .
-            ' (entity_id, all_groups, customer_group_id, value, website_id) VALUES ';
             
             foreach ($group_cols as $key)
-            {            	
-            	$price=str_replace(",",".",$item[$key]);
-                if (!empty($price))
+            {
+                if ($price = (float) $item[$key])
                 {
                     $group_id = $this->_groups[$key]['id'];
+                    $sql = 'INSERT INTO ' . $table_name .
+                         ' (entity_id, all_groups, customer_group_id, value, website_id) VALUES ';
                     $inserts = array();
                     $data = array();
                     
@@ -61,31 +58,20 @@ class GrouppriceProcessor extends Magmi_ItemProcessor
                         $data[] = $group_id;
                         $data[] = $price;
                         $data[] = $website_id;
-                    }                    
+                    }
+                    
+                    if (!empty($data))
+                    {
+                        $sql .= implode(', ', $inserts);
+                        $sql .= ' ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+                        $this->insert($sql, $data);
+                    }
                 }
             }
-            //multiple insert
-            if (!empty($data))
-            {
-            	$sql .= implode(', ', $inserts);
-            	$sql .= ' ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
-            	$this->insert($sql, $data);
-            }
-            
         }
         return true;
     }
 
-    public function createGroup($groupname)
-	{
-		$cg=$this->tablename('customer_group');
-    	$sql="INSERT INTO $cg (customer_group_code,tax_class_id)
-    				VALUES (?,?)";
-		$gid=$this->insert($sql,array($groupname,$this->_tax_class_id));    	
-    	return $gid;
-    		
-    }
-    
     /**
      * Inspect column list for group price columns info
      *
@@ -100,16 +86,33 @@ class GrouppriceProcessor extends Magmi_ItemProcessor
         {
             if (preg_match("|group_price:(.*)|", $col, $matches))
             {
-            	$groupname=$matches[1];
                 $sql = 'SELECT customer_group_id FROM ' . $this->tablename("customer_group") .
                      ' WHERE customer_group_code = ?';
-                if ($id = $this->selectone($sql, $groupname, "customer_group_id"))
+                if ($id = $this->selectone($sql, $matches[1], "customer_group_id"))
                 {
-                    $this->_groups[$col] = array('name'=>$groupname,'id'=>$id);
+                    $this->_groups[$col] = array('name'=>$matches[1],'id'=>$id);
                 }
                 else
                 {
-                   	$this->_groups[$col] = array('name'=>$groupname,'id'=>$this->createGroup($groupname));
+                    // Only pickup the first class
+                    $taxClasses = Mage::getModel('tax/class')->getCollection()
+                        ->setClassTypeFilter('CUSTOMER')
+                        ->toOptionArray();
+                    if (count($taxClasses) > 0)
+                    {
+                        $taxClassCustomer = $taxClasses[0]['value'];
+                        
+                        // create the group and do it again
+                        $customerGroups = Mage::getModel('customer/group');
+                        $customerGroups->customer_group_code = $matches[1];
+                        $customerGroups->tax_class_id = $taxClassCustomer;
+                        $customerGroups->save();
+                        
+                        if ($id = $this->selectone($sql, $matches[1], "customer_group_id"))
+                        {
+                            $this->_groups[$col] = array('name'=>$matches[1],'id'=>$id);
+                        }
+                    }
                 }
             }
         }
@@ -126,9 +129,5 @@ class GrouppriceProcessor extends Magmi_ItemProcessor
         /* Check price scope in a general config (0 = global, 1 = website) */
         $sql = 'SELECT value FROM ' . $this->tablename('core_config_data') . ' WHERE path = ?';
         $this->_priceScope = intval($this->selectone($sql, array('catalog/price/scope'), 'value'));
-        /* Getting customer tax class */
-        $sql="SELECT id FROM tax_class WHERE class_type='CUSTOMER'";
-        $this->_tax_class_id=$this->selectone($sql,null,'id');
-        
     }
 }

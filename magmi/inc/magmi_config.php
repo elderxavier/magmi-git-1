@@ -35,21 +35,11 @@ class DirbasedConfig extends Properties
 
     public function getLastSaved($fmt)
     {
-        if(file_exists($this->_confname))
-        {
-            $lastsaved=strftime($fmt, filemtime($this->_confname));
-        }
-        else
-        {
-            $lastsaved="never";
-        }
-        return $lastsaved;
+        return strftime($fmt, filemtime($this->_confname));
     }
 
     public function load($name = null)
     {
-       if(!isset($this->_props))
-       {
         if ($name == null)
         {
             $name = $this->_confname;
@@ -60,7 +50,6 @@ class DirbasedConfig extends Properties
             $this->save();
         }
         parent::load($name);
-       }
     }
 
     public function save($arr = null)
@@ -98,7 +87,7 @@ class ProfileBasedConfig extends DirbasedConfig
     public function getProfileDir()
     {
         $subdir = ($this->_profile == "default" ? "" : DIRSEP . $this->_profile);
-        $confdir = Magmi_Config::getInstance()->getConfDir()."$subdir";
+        $confdir = dirname(dirname(__FILE__)) . DIRSEP . "conf$subdir";
         if (!file_exists($confdir))
         {
             @mkdir($confdir, Magmi_Config::getInstance()->getDirMask());
@@ -126,15 +115,8 @@ class Magmi_Config extends DirbasedConfig
 
     public function getConfDir()
     {
-        if($this->_confname==null)
-        {
-            $confdir = realpath(dirname(dirname(__FILE__)) . DIRSEP . "conf");
-            return $confdir;
-        }
-        else
-        {
-            return $this->_basedir;
-        }
+        $confdir = realpath(dirname(dirname(__FILE__)) . DIRSEP . "conf");
+        return $confdir;
     }
 
     public function __construct()
@@ -175,31 +157,39 @@ class Magmi_Config extends DirbasedConfig
 
     public function load($name = null)
     {
-        if($name==null)
-        {
-         $conf = (!$this->isDefault()) ? $this->_confname : $this->_confname . ".default";
-        }
-        else 
-        {
-            $conf=$name;
-        }
+        $conf = (!$this->isDefault()) ? $this->_confname : $this->_confname . ".default";
         parent::load($conf);
-        $this->_confname = basename($conf);
-        if($this->_confname!=$conf)
-        {
-             $this->_basedir=dirname($conf);
-        }
+        $alt = false;
         if ($this->hasSection('USE_ALTERNATE'))
         {
-            $alternate=$this->get("USE_ALTERNATE", "file");
-            $this->_confname = basename($alternate);
-            $this->_basedir=dirname($alternate);
+            $this->_confname = $this->get("USE_ALTERNATE", "file");
             $alt = true;
-            $this->set("USE_ALTERNATE", "file", $this->_confname);
-            parent::load($this->_confname);
         }
-        
-      
+        parent::load($this->_confname);
+        if ($alt)
+        {
+            $this->set("USE_ALTERNATE", "file", $this->_confname);
+        }
+        // Migration from 0.6.17
+        if ($this->hasSection("PLUGINS_DATASOURCES"))
+        {
+            $pluginsconf = new DirbasedConfig($this->getConfDir(), "plugins.conf");
+            $arr = array("PLUGINS_DATASOURCES"=>$this->getSection("PLUGINS_DATASOURCES"),
+                "PLUGINS_GENERAL"=>$this->getSection("PLUGINS_GENERAL"),
+                "PLUGINS_ITEMPROCESSORS"=>$this->getSection("PLUGINS_ITEMPROCESSORS"));
+            $pluginsconf->setProps($arr);
+            $pluginsconf->save();
+            $this->removeSection("PLUGINS_DATASOURCES");
+            $this->removeSection("PLUGINS_GENERAL");
+            $this->removeSection("PLUGINS_ITEMPROCESSORS");
+            $this->save();
+        }
+        // Migration step (to percent) , 0.7beta4
+        if ($this->get("GLOBAL", "step", 0) == 0 || floatval($this->get("GLOBAL", "step", 0.5)) > 20)
+        {
+            $this->set("GLOBAL", "step", 0.5);
+            $this->save();
+        }
         return $this;
     }
 

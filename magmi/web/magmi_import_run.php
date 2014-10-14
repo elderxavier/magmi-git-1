@@ -71,7 +71,7 @@ foreach ($_REQUEST as $k => $v)
 								 parameters:imp_params,
 								onCreate:function(r){window._sr=r;},
 								onLoading:function(r){
-													 startProgress.delay(0.3,imp_params);
+													 startProgress(imp_params).delay(0.2);
 													}});
 		}
 	};

@@ -86,12 +86,6 @@ class Magmi_DefaultAttributeItemProcessor extends Magmi_ItemProcessor
         {
             $this->initializeBaseCols($item);
             $this->initializeBaseAttrs($item);
-            //force url key for new items for magento > 1.7.x
-            if($this->getMagentoVersion()>"1.7.x" && empty($item['url_key']))
-            {
-               $item["url_key"]=Slugger::slug($item["name"]);
-            } 
-        
         }
         // forcing default values for mandatory processing columns
         foreach ($this->_forcedefault as $k => $v)
@@ -344,14 +338,11 @@ class Magmi_DefaultAttributeItemProcessor extends Magmi_ItemProcessor
         {
             return "__MAGMI_DELETE__";
         }
-        
-        //in case of url key already has special regexp value in it
-        $xurlk=preg_quote($urlk);
         // for existing product, check if we have already a value matching the current pattern
         if ($exists)
         {
             $sql = "SELECT value FROM $cpev WHERE attribute_id=? AND entity_id=? AND value REGEXP ?";
-            $eurl = $this->selectone($sql, array($attrdesc["attribute_id"],$pid,$xurlk . "(-\d+)?"), "value");
+            $eurl = $this->selectone($sql, array($attrdesc["attribute_id"],$pid,$urlk . "(-\d+)?"), "value");
             // we match wanted pattern, try finding conflicts with our current one
             if ($eurl)
             {
@@ -364,7 +355,7 @@ class Magmi_DefaultAttributeItemProcessor extends Magmi_ItemProcessor
             {
                 
                 $sql = "SELECT * FROM $cpev WHERE attribute_id=? AND entity_id!=?  AND value REGEXP ?";
-                $umatch = $xurlk . "(-\d+)?";
+                $umatch = $urlk . "(-\d+)?";
             }
             $lst = $this->selectAll($sql, array($attrdesc["attribute_id"],$pid,$umatch));
         }

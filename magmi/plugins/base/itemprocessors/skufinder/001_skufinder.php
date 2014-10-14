@@ -6,34 +6,10 @@ class SkuFinderItemProcessor extends Magmi_ItemProcessor
 
     public function getPluginInfo()
     {
-        return array("name"=>"SKU Finder","author"=>"Dweeves","version"=>"0.0.3",
+        return array("name"=>"SKU Finder","author"=>"Dweeves","version"=>"0.0.2",
             "url"=>$this->pluginDocUrl("SKU_Finder"));
     }
 
-    public function getPluginParams($params)
-    
-    {
-    
-        $pp=array();
-    
-        foreach($params as $k=>$v)
-    
-        {
-    
-            if(preg_match("/^SKUF:.*$/",$k))
-    
-            {
-    
-                $pp[$k]=$v;
-    
-            }
-    
-        }
-    
-        return $pp;
-    
-    }
-   
     public function processItemBeforeId(&$item, $params = null)
     {
         $matchfield = trim($this->getParam("SKUF:matchfield"));
@@ -83,7 +59,7 @@ class SkuFinderItemProcessor extends Magmi_ItemProcessor
             return false;
         }
         // now find sku
-        $cpebt = $this->tablename("catalog_product_entity_" . $attinfo["backend_type"]);
+        $cpebt = $this->tablebname("catalog_product_entity_" . $attinfo["backend_type"]);
         $sql = "SELECT sku FROM " . $this->tablename("catalog_product_entity") . " as cpe JOIN
 		$cpebt as cpebt ON cpebt.value=? AND cpebt.attribute_id=? AND cpebt.entity_id=cpe.entity_id";
         $stmt = $this->select($sql, array($item[$matchfield],$attinfo["attribute_id"]));

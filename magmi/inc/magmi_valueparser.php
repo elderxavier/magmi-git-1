@@ -11,12 +11,6 @@ class Magmi_ValueParser
         
         foreach ($dictarray as $key => $vals)
         {
-            // Unsure of cause for NULL $vals, but this avoids messages in the error log
-            if ($vals === NULL)
-            {
-                continue;   
-            }
-            
             $ik = array_keys($vals);
             // replace base values
             while (preg_match("|\{$key\.(.*?)\}|", $pvalue, $matches))
@@ -27,7 +21,7 @@ class Magmi_ValueParser
                     {
                         if (in_array($match, $ik))
                         {
-                            $rep = $renc . str_replace('"', '\\"', $dictarray[$key][$match]) . $renc;
+                            $rep = $renc . $dictarray[$key][$match] . $renc;
                         }
                         else
                         {
@@ -41,7 +35,7 @@ class Magmi_ValueParser
         }
         
         // replacing expr values
-        while (preg_match("|\{\{\s*(.*?)\s*\}\}|s", $pvalue, $matches))
+        while (preg_match("|\{\{\s*(.*?)\s*\}\}|", $pvalue, $matches))
         {
             foreach ($matches as $match)
             {
@@ -53,14 +47,14 @@ class Magmi_ValueParser
                     $rep = eval("return ($code);");
                     // escape potential "{{xxx}}" values in interpreted target
                     // so that they won't be reparsed in next round
-                    $rep = preg_replace("|\{\{\s*(.*?)\s*\}\}|s", "____$1____", $rep);
+                    $rep = preg_replace("|\{\{\s*(.*?)\s*\}\}|", "____$1____", $rep);
                     $pvalue = str_replace($matches[0], $rep, $pvalue);
                 }
             }
         }
         
         // unescape matches
-        $pvalue = preg_replace("|____(.*?)____|s", '{{$1}}', $pvalue);
+        $pvalue = preg_replace("|____(.*?)____|", '{{$1}}', $pvalue);
         // single replaced values
         $pvalue = str_replace($renc, '', $pvalue);
         return "" . $pvalue;
