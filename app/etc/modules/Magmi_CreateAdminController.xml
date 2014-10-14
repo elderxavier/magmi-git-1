@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Magmi_CreateAdminController>
+            <active>true</active>
+            <codePool>community</codePool>
+        </Magmi_CreateAdminController>
+    </modules>
+</config>

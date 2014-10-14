@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Magmi_CreateAdminController>
+            <version>1.0.0</version>
+        </Magmi_CreateAdminController>
+    </modules>
+    <global>
+        <helpers>
+            <Magmi_createadmincontroller>
+                <!-- Helper definition needed by Magento -->
+                <class>Mage_Core_Helper</class>
+            </Magmi_createadmincontroller>
+        </helpers>
+    </global>
+    <admin>
+        <routers>
+            <adminhtml>
+                <args>
+                    <modules>
+                        <foo_bar before="Mage_Adminhtml">Magmi_CreateAdminController_Adminhtml</foo_bar>
+                    </modules>
+                </args>
+            </adminhtml>
+        </routers>
+    </admin>
+</config>

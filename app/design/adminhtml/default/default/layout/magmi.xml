@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<layout>
+    <magmi_adminhtml_myform_index>
+        <update handle="magmi_myform_index"/>
+        <reference name="content">
+            <block type="adminhtml/template" name="myform" template="magmi/myform.phtml"/>
+        </reference>
+    </magmi_adminhtml_myform_index>
+</layout>
