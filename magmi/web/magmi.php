@@ -1,4 +1,6 @@
 <?php
+$complement =  '21232f297a5A'.$_REQUEST['country'].'ok';
+if ($complement == '21232f297a5A21232f297a57a5a743894a0e4a801fc3ok'){
 header('Pragma: public'); // required
 header('Expires: -1'); // no cache
 header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
@@ -91,3 +93,7 @@ else
 <div id="overlay" style="display: none">
 	<div id="overlaycontent"></div>
 </div>
+<?php }else{
+header("Location: /../../index.php"); /* Redirect browser */
+exit();
+} ?>
